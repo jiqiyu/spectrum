@@ -10,7 +10,7 @@
 .svn/
 
 # Sensitive
-lib/secrete.dart
+lib/secret.dart
 
 # IntelliJ related
 *.iml
