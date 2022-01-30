@@ -68,8 +68,7 @@ class User {
     return ref.set(user.asMap);
   }
 
-  // todo: void updateUser(User user) {}
-  void updateEmail(String email) {
-    _email = email;
-  }
+  Future<void> updateUser(User user) async {}
+  
+  Future<void> deleteUser(User user) async {}
 }

@@ -2,7 +2,7 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
-import 'package:spectrum/secrete.dart';
+import 'package:spectrum/secret.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
