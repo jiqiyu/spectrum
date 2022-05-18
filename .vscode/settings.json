@@ -1,0 +1,7 @@
+{
+  "[dart]": {
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "Dart-Code.flutter"
+  }
+}
