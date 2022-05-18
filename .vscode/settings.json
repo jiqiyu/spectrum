@@ -2,6 +2,6 @@
   "[dart]": {
     "editor.formatOnPaste": true,
     "editor.formatOnSave": true,
-    "editor.defaultFormatter": "Dart-Code.flutter"
+    "editor.defaultFormatter": "Dart-Code.dart-code"
   }
 }
