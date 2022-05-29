@@ -3,7 +3,7 @@ import 'package:spectrum/service/firestore.dart';
 
 class Spectrum {
   String? id; // firestore auto generated doc id
-  String name;
+  String name; // enforces uniqueness
   bool isPublic = false;
   bool isArchived = false;
   List<String>? workders = [];
@@ -28,7 +28,7 @@ class Spectrum {
         tags = List<String>.from(map['tags'] ?? []),
         taskIds = List<String>.from(map['taskIds'] ?? []),
         updatedAt = map['updatedAt'];
-  
+
   Spectrum.fromMapWithId(Map<String, dynamic> map)
       : assert(map['name'] != null, "'name' cannot be null."),
         id = map['id'],
@@ -67,7 +67,7 @@ class Spectrum {
     };
   }
 
-  Future<List<Spectrum>> fetchAll() async {
+  static Future<List<Spectrum>> fetchAll() async {
     var ref = FirestoreService().db.collection('specs');
     var snapshot = await ref.get();
     if (snapshot.size == 0) return [];
@@ -77,6 +77,15 @@ class Spectrum {
   }
 
   Future<void> createSpec(Spectrum spec, [bool isDefault = false]) async {
+    var nameRef = FirestoreService()
+        .db
+        .collection('specs')
+        .doc(isDefault ? 'system_default' : spec.name);
+    var result = await nameRef.get();
+    if (result.exists) {
+      throw Exception('Spec name already exists.');
+    }
+
     var ref = isDefault
         ? FirestoreService().db.collection('specs').doc('system_default')
         : FirestoreService().db.collection('specs').doc();
