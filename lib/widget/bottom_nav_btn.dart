@@ -12,7 +12,7 @@ class BottomNavBtn extends StatefulWidget {
     Key? key,
     required this.icon,
     required this.label,
-    this.iconSize = 24.0,
+    this.iconSize = 28.0,
     this.selectedColor = Colors.orange,
     this.unselectedColor = Colors.black87,
   }) : super(key: key);
@@ -22,8 +22,6 @@ class BottomNavBtn extends StatefulWidget {
 }
 
 class _BottomNavBtnState extends State<BottomNavBtn> {
-  final double _iconMarginBottom = 12.5;
-
   @override
   void initState() {
     super.initState();
@@ -39,24 +37,21 @@ class _BottomNavBtnState extends State<BottomNavBtn> {
             Color color = snapshot.data == widget.label
                 ? widget.selectedColor!
                 : widget.unselectedColor!;
-            return Column(
-              children: [
-                IconButton(
-                  constraints: BoxConstraints(
-                    maxHeight: widget.iconSize! + _iconMarginBottom,
-                    minHeight: widget.iconSize! + _iconMarginBottom,
-                  ),
-                  iconSize: widget.iconSize!,
-                  icon: Icon(widget.icon, color: color),
-                  onPressed: () =>
-                      source.screenEmitter.add(widget.label ?? 'checklist'),
+            return InkWell(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Icon(
+                  widget.icon,
+                  size: widget.iconSize!,
+                  color: color,
                 ),
                 if (widget.label != null)
                   Text(
                     widget.label!,
                     style: TextStyle(fontSize: 9.0, color: color),
                   ),
-              ],
+              ]),
+              onTap: () =>
+                  source.screenEmitter.add(widget.label ?? 'checklist'),
             );
           }
           return Container();
