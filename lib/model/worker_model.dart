@@ -60,6 +60,7 @@ enum TaskType {
   // startPoint,
   // endPoint,
   // singlePoint,
+  // cycleTracking,
 }
 
 // typedef TaskCreateFunction = Future<void> Function(

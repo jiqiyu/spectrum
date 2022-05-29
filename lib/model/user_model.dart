@@ -69,6 +69,6 @@ class User {
   }
 
   Future<void> updateUser(User user) async {}
-  
+
   Future<void> deleteUser(User user) async {}
 }
