@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spectrum/screen/profile.dart';
+import 'package:spectrum/screen/spectrums.dart';
 import 'package:spectrum/theme.dart' as app_theme;
 import 'package:spectrum/widget/bottom_nav_btn.dart';
 import 'package:spectrum/service/stream_service.dart' as source;
@@ -9,7 +10,7 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
@@ -42,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             body: _buildAppBody(snapshot.data ?? 'checklist'),
             bottomNavigationBar: SizedBox(
-              height: 80.0,
+              height: 68.0,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
@@ -96,12 +97,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-
 Widget _buildAppBody(String? screen) {
   switch (screen) {
     // TODO: write all the components
-    // case 'Spectrums':
-    //   return const Spectrums();
+    case 'Spectrums':
+      return const SpectrumsScreen();
     // case 'Create':
     //   return const Activities();
     // case 'Insights':
@@ -112,7 +112,7 @@ Widget _buildAppBody(String? screen) {
     //   return const DailyChecklist();
     default:
       return Center(
-        child: Text(screen ?? 'checklist'),	
+        child: Text(screen ?? 'checklist'),
       );
   }
 }
