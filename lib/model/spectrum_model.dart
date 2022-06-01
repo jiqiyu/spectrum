@@ -76,6 +76,21 @@ class Spectrum {
     return specs;
   }
 
+  // TODO: pagination
+  static Future<List<Spectrum>> fetchSome(
+      int cursor, String orderby, String orderDirection, int pageSize) async {
+    var ref = FirestoreService().db.collection('specs');
+    var snapshot = await ref
+        .orderBy(orderby, descending: orderDirection == 'desc')
+        .startAt([cursor + 1])
+        .limit(pageSize)
+        .get();
+    if (snapshot.size == 0) return [];
+    List<Spectrum> specs =
+        snapshot.docs.map((s) => Spectrum.fromMapWithId(s.data())).toList();
+    return specs;
+  }
+
   Future<void> createSpec(Spectrum spec, [bool isDefault = false]) async {
     var nameRef = FirestoreService()
         .db

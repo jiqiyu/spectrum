@@ -14,7 +14,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String? currentScreen = 'Spectrum';
+  // String? currentScreen = 'Spectrum';
 
   @override
   Widget build(BuildContext context) {
