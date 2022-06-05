@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:spectrum/service/firestore.dart';
 
 class User {
@@ -66,6 +67,13 @@ class User {
   Future<void> createUser(User user) async {
     var ref = FirestoreService().db.collection('users').doc(user.id);
     return ref.set(user.asMap);
+  }
+
+  static Future<void> addSpec(String userId, String specId) async {
+    var ref = FirestoreService().db.collection('users').doc(userId);
+    return ref.update({
+      'specs': FieldValue.arrayUnion([specId]),
+    });
   }
 
   Future<void> updateUser(User user) async {}

@@ -55,7 +55,7 @@ class Dispatcher extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
-      stream: AuthService().userStream,
+      stream: AuthService.userStream,
       builder: (context, snapshot) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
@@ -79,10 +79,11 @@ class DataHandler extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentUser = User(
-      AuthService().user!.uid,
-      AuthService().user!.displayName!,
-      AuthService().user!.email!,
+      AuthService.user!.uid,
+      AuthService.user!.displayName!,
+      AuthService.user!.email!,
     );
+
     return FutureBuilder<Object>(
       future: currentUser.isNewUser(currentUser.id),
       builder: (context, snapshot) {

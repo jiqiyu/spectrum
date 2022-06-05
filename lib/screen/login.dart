@@ -31,13 +31,13 @@ class LoginScreen extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Sign in with Google'),
+                children: const [
+                  Text('Sign in with Google'),
                   LoginIconButton(
                     text: 'Sign in with Google',
                     icon: FontAwesomeIcons.google,
                     color: Colors.black87,
-                    loginMethod: AuthService().googleLogin,
+                    loginMethod: AuthService.googleLogin,
                   ),
 
                   // FutureBuilder<Object>(

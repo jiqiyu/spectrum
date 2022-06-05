@@ -1,7 +1,10 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:spectrum/model/spectrum_model.dart';
 import 'package:spectrum/model/worker_model.dart';
 import 'package:spectrum/model/routine_model.dart';
+import 'package:spectrum/service/auth.dart';
 import 'package:spectrum/service/stream_service.dart' as source;
 
 import '../widget/error.dart';
@@ -17,94 +20,125 @@ class _SpectrumsScreenState extends State<SpectrumsScreen> {
   final _pageSize = 10;
   final _orderBy = 'createdAt';
   final _orderDirection = 'asc';
-  var _cursor = -1;
+  String _startAtDocId = '';
   bool _isLoading = false;
   bool _noMore = false;
   List<Spectrum> specs = [];
 
   final ScrollController _scrollController = ScrollController();
 
-  void fetchSpecs() async {
-    if (_isLoading || _noMore) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      var data = await Spectrum.fetchSome(
-          _cursor, _orderBy, _orderDirection, _pageSize);
-
-      setState(() {
-        _isLoading = false;
-        _noMore = data.length < _pageSize;
-        specs.addAll(data);
-        if (specs.isNotEmpty) _cursor = specs.length;
-      });
-
-      source.specListController.add(specs);
-    } catch (e) {
-      source.specListController.addError(e);
-    }
-  }
-
   @override
   void initState() {
     super.initState();
-    fetchSpecs();
+    _fetchSpecs(AuthService.user!.uid);
   }
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Spectrum>>(
         stream: source.specListController,
-        builder: (context, spanshot) {
-          if (spanshot.hasError) return const ErrorMessage();
-          if (spanshot.hasData) {
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return ErrorMessage(message: snapshot.error.toString());
+          }
+          if (snapshot.hasData) {
             if (_isLoading) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            if (spanshot.data!.isEmpty) {
+            if (snapshot.data!.isEmpty) {
               // no data, create a system default spectrum
-              var defaultSpec = Spectrum('My Day Tracker');
-              defaultSpec.createSpec(defaultSpec, true);
+              var defaultSpec = Spectrum.fromMap(
+                  {'name': 'My Day Tracker', 'isDefault': true});
+              setState(() => specs.add(defaultSpec));
             }
 
-            return SpecListBuilder(
-              specs: spanshot.data ?? [],
-              noMore: _noMore && _cursor > 0,
-              scrollController: _scrollController,
-            );
+            return Container(
+                alignment: AlignmentDirectional.topStart,
+                child: SingleChildScrollView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(10),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.max,
+                      children: _spectrumCards(snapshot.data ?? specs),
+                    )));
           }
 
           return const Center(child: CircularProgressIndicator());
         });
   }
-}
 
-class SpecListBuilder extends StatelessWidget {
-  final List<Spectrum> specs;
-  final bool noMore;
-  final ScrollController scrollController;
+  void _fetchSpecs(String userId) async {
+    if (_isLoading || _noMore) return;
 
-  const SpecListBuilder({
-    Key? key,
-    required this.specs,
-    required this.noMore,
-    required this.scrollController,
-  }) : super(key: key);
+    setState(() => _isLoading = true);
 
-  @override
-  Widget build(BuildContext context) {
-    // TODO: display system default spectrum
-    if (specs.isEmpty) return const Center(child: Text('No data'));
+    try {
+      var data = await Spectrum.fetchSome(
+          userId, _startAtDocId, _orderBy, _orderDirection, _pageSize);
+      late Spectrum defaultSpec;
 
-    // TODO: display spectrums
-    return Center(
-        child: Text(
-            "There are ${specs.length} Spectrum(s)${noMore ? ' and no more.' : ' on this page.'}"));
+      if (data.isEmpty) {
+        defaultSpec = Spectrum.fromMap({
+          'name': 'My Day Tracker_${AuthService.user!.uid}',
+          'isDefault': true
+        });
+        defaultSpec.id =
+            await Spectrum.createSpec(AuthService.user!.uid, defaultSpec);
+      }
+
+      setState(() {
+        _isLoading = false;
+        _noMore = data.length < _pageSize;
+        specs.addAll(data.isEmpty ? [defaultSpec] : data);
+        // TODO: fix this
+        if (specs.isNotEmpty) _startAtDocId = specs[specs.length - 1].id!;
+      });
+      source.specListController.add(specs);
+    } catch (e) {
+      source.specListController.addError(e);
+    }
+  }
+
+  List<Widget> _spectrumCards(List<Spectrum> specs) {
+    List<Widget> cards = <Widget>[];
+    List<Widget> containers = <Widget>[];
+    final double viewWidth = MediaQuery.of(context).size.width;
+    final double cardDimension = viewWidth * 0.45;
+    const double marginX = 5;
+    const double marginBottom = 10;
+    // final random = Random();
+
+    cards.add(Center(child: Wrap(children: containers)));
+
+    for (int i = 0; i < specs.length; i++) {
+      containers.add(GestureDetector(
+        onTap: () {},
+        child: Container(
+          width: cardDimension,
+          // height: (50 + random.nextInt(300 - 50)).toDouble(),
+          height: cardDimension,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.black38, width: 1),
+            borderRadius: const BorderRadius.all(Radius.circular(8)),
+          ),
+          margin: EdgeInsets.only(
+              left: (i % 2 == 0) ? 0 : marginX,
+              right: (i % 2 == 0) ? marginX : 0,
+              bottom: marginBottom),
+          child: Center(
+              child: Text(
+                  specs[i].name.replaceAll('_${AuthService.user!.uid}', ''),
+                  style: const TextStyle(color: Colors.black87))),
+        ),
+      ));
+    }
+
+    return cards;
   }
 }
-
 
 
 // routine -> task -> worker -> spectrum
