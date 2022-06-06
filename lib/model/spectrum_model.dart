@@ -6,16 +6,18 @@ class Spectrum {
   String? id; // firestore auto generated doc id
   String name; // enforces uniqueness in the form of '${spec.name}_$userId'
   bool? isDefault;
+  String userId;
   bool isPublic = false;
   bool isArchived = false;
-  List<String>? workders = [];
-  List<String>? tags = [];
-  List<String>? taskIds = [];
+  List<String>? workders;
+  List<String>? tags;
+  List<String>? taskIds;
   Timestamp createdAt = Timestamp.now();
   Timestamp updatedAt = Timestamp.now();
 
   Spectrum(
-    this.name, [
+    this.name,
+    this.userId, [
     this.isDefault,
     this.workders,
     this.taskIds,
@@ -24,7 +26,9 @@ class Spectrum {
 
   Spectrum.fromMap(Map<String, dynamic> map)
       : assert(map['name'] != null, "'name' cannot be null."),
+        assert(map['userId'] != null, "'userId' cannot be null."),
         name = map['name'],
+        userId = map['userId'],
         isDefault = map['isDefault'] ?? false,
         isPublic = map['isPublic'] ?? false,
         isArchived = map['isArchived'] ?? false,
@@ -36,8 +40,10 @@ class Spectrum {
 
   Spectrum.fromMapWithId(Map<String, dynamic> map)
       : assert(map['name'] != null, "'name' cannot be null."),
-        id = map['id'],
+        assert(map['userId'] != null, "'userId' cannot be null."),
         name = map['name'],
+        userId = map['userId'],
+        id = map['id'],
         isDefault = map['isDefault'] ?? false,
         isPublic = map['isPublic'] ?? false,
         isArchived = map['isArchived'] ?? false,
@@ -50,6 +56,7 @@ class Spectrum {
   Map<String, dynamic> get asMap {
     return <String, dynamic>{
       'name': name,
+      'userId': userId,
       'isDefault': isDefault,
       'isPublic': isPublic,
       'isArchive': isArchived,
@@ -65,6 +72,7 @@ class Spectrum {
     return <String, dynamic>{
       'id': id,
       'name': name,
+      'userId': userId,
       'isDefault': isDefault,
       'isPublic': isPublic,
       'isArchive': isArchived,
@@ -76,28 +84,25 @@ class Spectrum {
     };
   }
 
-  static Future<List<String>> fetchUserSpecIds(String userId) async {
-    List<String> specIds = [];
+  static Future<List<String>> fetchUserSpecNames(String userId) async {
+    List<String> specNames = [];
 
     var userRef = FirestoreService().db.collection('users').doc(userId);
     var snapshot = await userRef.get();
-    if (!snapshot.exists) return specIds;
+    if (!snapshot.exists) return specNames;
 
     var data = snapshot.get('specs');
-    data.forEach((specId) {
-      specIds.add(specId);
+    data.forEach((specName) {
+      specNames.add(specName);
     });
-    return specIds;
+    return specNames;
   }
 
   static Future<List<Spectrum>> fetchAll(String userId) async {
-    var specIds = await fetchUserSpecIds(userId);
-    if (specIds.isEmpty) return [];
-
     var ref = FirestoreService()
         .db
         .collection('specs')
-        .where(FieldPath.documentId, whereIn: specIds);
+        .where('userId', isEqualTo: userId);
     var data = await ref.get();
 
     if (data.size == 0) return [];
@@ -106,42 +111,36 @@ class Spectrum {
         .toList();
   }
 
-  static Future<List<Spectrum>> fetchSome(String userId, String cursor,
+  static Future<Map<String, dynamic>> fetchSome(String userId, int cursor,
       String orderby, String orderDirection, int pageSize) async {
-    var specIds = await fetchUserSpecIds(userId);
-    specIds.sort();
-    if (specIds.isEmpty) return [];
-
     var ref = FirestoreService()
         .db
         .collection('specs')
-        .where(FieldPath.documentId, whereIn: specIds)
-        .orderBy(FieldPath.documentId)
-        // TODO: fix this
-        .startAt(cursor == '' ? [specIds[0]] : [cursor])
-        .limit(pageSize);
+        .orderBy('userId')
+        .orderBy(orderby, descending: orderDirection == 'desc')
+        .startAt([userId]);
 
     var data = await ref.get();
-    if (data.size == 0) return [];
+    if (data.size == 0) return {'specs': [], 'hasMore': false};
 
-    var snapshot = data.docs.toList();
+    if (cursor + 1 >= data.size) {
+      throw Exception('fetchSome: cursor out of range');
+    }
+
+    if (data.size < pageSize) pageSize = data.size;
+    if (data.size - (cursor + 1) < pageSize) {
+      pageSize = data.size - (cursor + 1);
+    }
+
+    int start = cursor + 1;
+    int end = start + pageSize;
+
+    var snapshot = data.docs.getRange(start, end).toList();
     var specs = snapshot
         .map((s) => Spectrum.fromMapWithId({'id': s.id, ...s.data()}))
         .toList();
 
-    switch (orderby) {
-      case 'name':
-        specs.sort((a, b) => a.name.compareTo(b.name));
-        break;
-      case 'updatedAt':
-        specs.sort((a, b) => a.updatedAt.compareTo(b.updatedAt));
-        break;
-      default:
-        specs.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    }
-    if (orderDirection == 'desc') specs.reversed.toList();
-
-    return specs;
+    return {'specs': specs, 'hasMore': data.size > end};
   }
 
   static Future<String> createSpec(String userId, Spectrum spec) async {
@@ -159,15 +158,16 @@ class Spectrum {
       await ref.set(spec.asMap);
       transaction
           .update(FirestoreService().db.collection('users').doc(userId), {
-        'specs': FieldValue.arrayUnion([ref.id])
+        'specs': FieldValue.arrayUnion(['${spec.name}_$userId'])
       });
     });
 
-    return ref.id;
+    return '${spec.name}_$userId';
   }
 
-  // TODO: delete from spec collection and update other related collections
-  static Future<void> delete(String id) async {}
+  // TODO:
+  // delete from spec collection and update other related collections
+  static Future<void> delete(List<String> ids) async {}
 
   Future<void> registerWorker(String worker) async {}
 

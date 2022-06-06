@@ -17,12 +17,12 @@ class SpectrumsScreen extends StatefulWidget {
 }
 
 class _SpectrumsScreenState extends State<SpectrumsScreen> {
-  final _pageSize = 10;
+  final _pageSize = 2;
   final _orderBy = 'createdAt';
   final _orderDirection = 'asc';
-  String _startAtDocId = '';
+  int _cursor = -1; // fetch startAt _cursor + 1
   bool _isLoading = false;
-  bool _noMore = false;
+  bool _hasMore = true;
   List<Spectrum> specs = [];
 
   final ScrollController _scrollController = ScrollController();
@@ -31,6 +31,12 @@ class _SpectrumsScreenState extends State<SpectrumsScreen> {
   void initState() {
     super.initState();
     _fetchSpecs(AuthService.user!.uid);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -62,7 +68,8 @@ class _SpectrumsScreenState extends State<SpectrumsScreen> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       mainAxisSize: MainAxisSize.max,
-                      children: _spectrumCards(snapshot.data ?? specs),
+                      children:
+                          _spectrumCards(snapshot.data ?? specs, _hasMore),
                     )));
           }
 
@@ -71,16 +78,16 @@ class _SpectrumsScreenState extends State<SpectrumsScreen> {
   }
 
   void _fetchSpecs(String userId) async {
-    if (_isLoading || _noMore) return;
+    if (_isLoading || !_hasMore) return;
 
     setState(() => _isLoading = true);
 
     try {
       var data = await Spectrum.fetchSome(
-          userId, _startAtDocId, _orderBy, _orderDirection, _pageSize);
+          userId, _cursor, _orderBy, _orderDirection, _pageSize);
       late Spectrum defaultSpec;
 
-      if (data.isEmpty) {
+      if (data['specs'].isEmpty) {
         defaultSpec = Spectrum.fromMap({
           'name': 'My Day Tracker_${AuthService.user!.uid}',
           'isDefault': true
@@ -91,10 +98,9 @@ class _SpectrumsScreenState extends State<SpectrumsScreen> {
 
       setState(() {
         _isLoading = false;
-        _noMore = data.length < _pageSize;
-        specs.addAll(data.isEmpty ? [defaultSpec] : data);
-        // TODO: fix this
-        if (specs.isNotEmpty) _startAtDocId = specs[specs.length - 1].id!;
+        _hasMore = data['hasMore'];
+        specs.addAll(data.isEmpty ? [defaultSpec] : data['specs']);
+        if (specs.isNotEmpty) _cursor = specs.length - 1;
       });
       source.specListController.add(specs);
     } catch (e) {
@@ -102,7 +108,7 @@ class _SpectrumsScreenState extends State<SpectrumsScreen> {
     }
   }
 
-  List<Widget> _spectrumCards(List<Spectrum> specs) {
+  List<Widget> _spectrumCards(List<Spectrum> specs, bool hasMore) {
     List<Widget> cards = <Widget>[];
     List<Widget> containers = <Widget>[];
     final double viewWidth = MediaQuery.of(context).size.width;
@@ -110,7 +116,6 @@ class _SpectrumsScreenState extends State<SpectrumsScreen> {
     const double marginX = 5;
     const double marginBottom = 10;
     // final random = Random();
-
     cards.add(Center(child: Wrap(children: containers)));
 
     for (int i = 0; i < specs.length; i++) {
@@ -134,6 +139,14 @@ class _SpectrumsScreenState extends State<SpectrumsScreen> {
                   style: const TextStyle(color: Colors.black87))),
         ),
       ));
+    }
+
+    if (hasMore) {
+      cards.add(Center(
+          child: TextButton(
+        onPressed: () => _fetchSpecs(AuthService.user!.uid),
+        child: const Text('Load More'),
+      )));
     }
 
     return cards;
