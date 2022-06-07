@@ -17,7 +17,7 @@ class SpectrumsScreen extends StatefulWidget {
 }
 
 class _SpectrumsScreenState extends State<SpectrumsScreen> {
-  final _pageSize = 2;
+  final _pageSize = 10;
   final _orderBy = 'createdAt';
   final _orderDirection = 'asc';
   int _cursor = -1; // fetch startAt _cursor + 1
@@ -39,6 +39,8 @@ class _SpectrumsScreenState extends State<SpectrumsScreen> {
     super.dispose();
   }
 
+  // TODO:
+  // - add scroll to fetch more
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Spectrum>>(

@@ -14,6 +14,7 @@ class Spectrum {
   List<String>? taskIds;
   Timestamp createdAt = Timestamp.now();
   Timestamp updatedAt = Timestamp.now();
+  // TODO: notification settings
 
   Spectrum(
     this.name,
@@ -166,7 +167,8 @@ class Spectrum {
   }
 
   // TODO:
-  // delete from spec collection and update other related collections
+  // - delete from spec collection
+  // - remember to update other related collections/documents/fields
   static Future<void> delete(List<String> ids) async {}
 
   Future<void> registerWorker(String worker) async {}
