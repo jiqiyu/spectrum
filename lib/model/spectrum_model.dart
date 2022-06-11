@@ -9,35 +9,39 @@ class Spectrum {
   String userId;
   bool isPublic = false;
   bool isArchived = false;
-  List<String>? workders;
+  bool isPinned = false;
+  List<String>? workers; // this list holds the task types
   List<String>? tags;
   List<String>? taskIds;
-  Timestamp createdAt = Timestamp.now();
-  Timestamp updatedAt = Timestamp.now();
-  // TODO: notification settings
+  Timestamp? createdAt;
+  Timestamp? updatedAt;
+  // TODO:
+  // - add notification settings
+  // - add attachments
 
-  Spectrum(
-    this.name,
-    this.userId, [
+  Spectrum({
+    required this.name,
+    required this.userId,
     this.isDefault,
-    this.workders,
+    this.workers,
     this.taskIds,
     this.tags,
-  ]);
+  });
 
   Spectrum.fromMap(Map<String, dynamic> map)
       : assert(map['name'] != null, "'name' cannot be null."),
         assert(map['userId'] != null, "'userId' cannot be null."),
         name = map['name'],
         userId = map['userId'],
-        isDefault = map['isDefault'] ?? false,
+        isPinned = map['isPinned'] ?? false,
+        // isDefault = map['isDefault'] ?? false,
         isPublic = map['isPublic'] ?? false,
         isArchived = map['isArchived'] ?? false,
-        workders = map['workders'],
+        workers = map['workers'],
         tags = map['tags'],
         taskIds = map['taskIds'],
-        createdAt = map['createdAt'] ?? Timestamp.now(),
-        updatedAt = map['updatedAt'] ?? Timestamp.now();
+        createdAt = map['createdAt'] ?? FieldValue.serverTimestamp(),
+        updatedAt = map['updatedAt'] ?? FieldValue.serverTimestamp();
 
   Spectrum.fromMapWithId(Map<String, dynamic> map)
       : assert(map['name'] != null, "'name' cannot be null."),
@@ -45,24 +49,26 @@ class Spectrum {
         name = map['name'],
         userId = map['userId'],
         id = map['id'],
-        isDefault = map['isDefault'] ?? false,
+        isPinned = map['isPinned'] ?? false,
+        // isDefault = map['isDefault'] ?? false,
         isPublic = map['isPublic'] ?? false,
         isArchived = map['isArchived'] ?? false,
-        workders = map['workders'],
+        workers = map['workers'],
         tags = map['tags'],
         taskIds = map['taskIds'],
-        createdAt = map['createdAt'] ?? Timestamp.now(),
-        updatedAt = map['updatedAt'] ?? Timestamp.now();
+        createdAt = map['createdAt'] ?? FieldValue.serverTimestamp(),
+        updatedAt = map['updatedAt'] ?? FieldValue.serverTimestamp();
 
   Map<String, dynamic> get asMap {
     return <String, dynamic>{
       'name': name,
       'userId': userId,
+      'isPinned': isPinned,
       'isDefault': isDefault,
       'isPublic': isPublic,
       'isArchive': isArchived,
       'tags': tags,
-      'workers': workders,
+      'workers': workers,
       'taskIds': taskIds,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
@@ -74,11 +80,12 @@ class Spectrum {
       'id': id,
       'name': name,
       'userId': userId,
+      'isPinned': isPinned,
       'isDefault': isDefault,
       'isPublic': isPublic,
       'isArchive': isArchived,
       'tags': tags,
-      'workers': workders,
+      'workers': workers,
       'taskIds': taskIds,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
@@ -144,7 +151,32 @@ class Spectrum {
     return {'specs': specs, 'hasMore': data.size > end};
   }
 
-  static Future<String> createSpec(String userId, Spectrum spec) async {
+  static Future<List<Spectrum>> fetchByName(List<String> name) async {
+    var ref =
+        FirestoreService().db.collection('specs').where('name', whereIn: name);
+    var data = await ref.get();
+
+    if (data.size == 0) return [];
+    return data.docs
+        .map((doc) => Spectrum.fromMapWithId({'id': doc.id, ...doc.data()}))
+        .toList();
+  }
+
+  static Future<Spectrum?> fetchDefault(String userId) async {
+    var ref = FirestoreService()
+        .db
+        .collection('specs')
+        .where('userId', isEqualTo: userId)
+        .where('isDefault', isEqualTo: true);
+    var data = await ref.get();
+
+    if (data.size == 0) return null;
+    return Spectrum.fromMapWithId(
+        {'id': data.docs.first.id, ...data.docs.first.data()});
+  }
+
+  static Future<String> createSpec(String userId, Spectrum spec,
+      {bool isDefault = false}) async {
     var nameRef = FirestoreService()
         .db
         .collection('specs')
@@ -156,7 +188,9 @@ class Spectrum {
 
     var ref = FirestoreService().db.collection('specs').doc();
     await FirestoreService().db.runTransaction((transaction) async {
-      await ref.set(spec.asMap);
+      var s = spec.asMap;
+      if (isDefault) s = {...s, 'isDefault': true};
+      await ref.set(s);
       transaction
           .update(FirestoreService().db.collection('users').doc(userId), {
         'specs': FieldValue.arrayUnion(['${spec.name}_$userId'])
@@ -168,7 +202,7 @@ class Spectrum {
 
   // TODO:
   // - delete from spec collection
-  // - remember to update other related collections/documents/fields
+  // - related collection: users, workers, tasks
   static Future<void> delete(List<String> ids) async {}
 
   Future<void> registerWorker(String worker) async {}
