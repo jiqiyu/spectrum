@@ -57,15 +57,12 @@ enum TaskType {
   routine, // cycle
   // plan, // N days plan
   // stocktaking,
-  // startPoint,
-  // endPoint,
-  // singlePoint,
-  // cycleTracking,
+  // calendarEvent,
 }
 
 const Map<String, String> taskDescription = {
   'routine':
-      'Cyclical routines, e.g. daily routine: exercise 30 mins every day',
+      'Cyclical routines, e.g. daily routine: exercise 30 mins every day or drink water every two hours, etc.',
   'plan': 'Short term or long term plan, e.g. 7 day plan, 30 day plan etc.',
   'cycleTracking': 'Track how frequently an event occurs, e.g. womens period',
 };

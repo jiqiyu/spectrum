@@ -1,6 +1,8 @@
 import 'dart:math';
-
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+
 import 'package:spectrum/model/spectrum_model.dart';
 import 'package:spectrum/model/worker_model.dart';
 import 'package:spectrum/model/routine_model.dart';
@@ -17,7 +19,7 @@ class SpectrumsScreen extends StatefulWidget {
 }
 
 class _SpectrumsScreenState extends State<SpectrumsScreen> {
-  final _pageSize = 10;
+  final _pageSize = 1;
   final _orderBy = 'createdAt';
   final _orderDirection = 'asc';
   int _cursor = -1; // fetch startAt _cursor + 1
@@ -30,6 +32,8 @@ class _SpectrumsScreenState extends State<SpectrumsScreen> {
   @override
   void initState() {
     super.initState();
+    // TODO:
+    // fetch once and cache data for saving network traffic
     _fetchSpecs(AuthService.user!.uid);
   }
 
@@ -40,7 +44,9 @@ class _SpectrumsScreenState extends State<SpectrumsScreen> {
   }
 
   // TODO:
+  // - use staggered grid view
   // - add scroll to fetch more
+  // - add sort by
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Spectrum>>(
@@ -61,18 +67,36 @@ class _SpectrumsScreenState extends State<SpectrumsScreen> {
               setState(() => specs.add(defaultSpec));
             }
 
-            return Container(
-                alignment: AlignmentDirectional.topStart,
-                child: SingleChildScrollView(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(10),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.max,
-                      children:
-                          _spectrumCards(snapshot.data ?? specs, _hasMore),
-                    )));
+            List<Widget> cards = _spectrumCards(snapshot.data ?? specs);
+            if (_hasMore) {
+              cards.add(Center(
+                child: TextButton(
+                    onPressed: () => _fetchSpecs(AuthService.user!.uid),
+                    child: const Text('Load More')),
+              ));
+            }
+
+            return MasonryGridView.count(
+                controller: _scrollController,
+                crossAxisCount: 2,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                itemCount: cards.length,
+                itemBuilder: (context, index) => cards[index]);
+
+            // return Container(
+            //     alignment: AlignmentDirectional.topStart,
+            //     child: SingleChildScrollView(
+            //         controller: _scrollController,
+            //         padding: const EdgeInsets.all(10),
+            //         child: Column(
+            //           mainAxisAlignment: MainAxisAlignment.start,
+            //           crossAxisAlignment: CrossAxisAlignment.center,
+            //           mainAxisSize: MainAxisSize.max,
+            //           children:
+            //               _spectrumCards(snapshot.data ?? specs, _hasMore),
+            //         )
+            //         ));
           }
 
           return const Center(child: CircularProgressIndicator());
@@ -94,8 +118,9 @@ class _SpectrumsScreenState extends State<SpectrumsScreen> {
           'name': 'My Day Tracker_${AuthService.user!.uid}',
           'isDefault': true
         });
-        defaultSpec.id =
-            await Spectrum.createSpec(AuthService.user!.uid, defaultSpec);
+        defaultSpec.id = await Spectrum.createSpec(
+            AuthService.user!.uid, defaultSpec,
+            isDefault: true);
       }
 
       setState(() {
@@ -110,50 +135,64 @@ class _SpectrumsScreenState extends State<SpectrumsScreen> {
     }
   }
 
-  List<Widget> _spectrumCards(List<Spectrum> specs, bool hasMore) {
-    List<Widget> cards = <Widget>[];
+  List<Widget> _spectrumCards(List<Spectrum> specs) {
     List<Widget> containers = <Widget>[];
     final double viewWidth = MediaQuery.of(context).size.width;
     final double cardDimension = viewWidth * 0.45;
-    const double marginX = 5;
-    const double marginBottom = 10;
-    // final random = Random();
-    cards.add(Center(child: Wrap(children: containers)));
 
     for (int i = 0; i < specs.length; i++) {
+      DateTime createdAt = DateTime.fromMicrosecondsSinceEpoch(
+          specs[i].createdAt!.microsecondsSinceEpoch,
+          isUtc: true);
+      String datetime = DateFormat('EEE, dd/MM/yyyy').format(createdAt);
+
       containers.add(GestureDetector(
-        onTap: () {},
-        child: Container(
-          width: cardDimension,
-          // height: (50 + random.nextInt(300 - 50)).toDouble(),
-          height: cardDimension,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black38, width: 1),
-            borderRadius: const BorderRadius.all(Radius.circular(8)),
-          ),
-          margin: EdgeInsets.only(
-              left: (i % 2 == 0) ? 0 : marginX,
-              right: (i % 2 == 0) ? marginX : 0,
-              bottom: marginBottom),
-          child: Center(
-              child: Text(
-                  specs[i].name.replaceAll('_${AuthService.user!.uid}', ''),
-                  style: const TextStyle(color: Colors.black87))),
-        ),
-      ));
+          onTap: () {},
+          child: Container(
+            padding: const EdgeInsets.only(left: 15, top: 8, bottom: 5),
+            margin: EdgeInsets.only(
+                left: (i % 2 == 0) ? 8 : 0,
+                right: (i % 2 == 0) ? 0 : 8,
+                top: 8),
+            // height: (50 + random.nextInt(300 - 50)).toDouble(),
+            height: cardDimension,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey,
+                  offset: Offset(0.0, 1.0), //(x,y)
+                  blurRadius: 1.0,
+                ),
+              ],
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+            ),
+            // child:
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(
+                  child: Text(
+                      specs[i].name.replaceAll('_${AuthService.user!.uid}', ''),
+                      style: const TextStyle(color: Colors.black87))),
+
+              // TODO:
+              // - display summary of the spectrum here
+              // - add a button to add/edit the spectrum
+
+              Text(
+                  '${specs[i].taskIds != null ? specs[i].taskIds!.length.toString() : '0'} metric(s) added',
+                  style: const TextStyle(color: Colors.black54, fontSize: 12)),
+              Padding(
+                  padding: const EdgeInsets.only(right: 10, bottom: 3),
+                  child: Text('Created at $datetime',
+                      style: const TextStyle(
+                          color: Colors.black54, fontSize: 12))),
+            ]),
+          )));
     }
 
-    if (hasMore) {
-      cards.add(Center(
-          child: TextButton(
-        onPressed: () => _fetchSpecs(AuthService.user!.uid),
-        child: const Text('Load More'),
-      )));
-    }
-
-    return cards;
+    return containers;
   }
 }
-
 
 // routine -> task -> worker -> spectrum
