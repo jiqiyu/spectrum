@@ -23,12 +23,6 @@ class BottomNavBtn extends StatefulWidget {
 
 class _BottomNavBtnState extends State<BottomNavBtn> {
   @override
-  void initState() {
-    super.initState();
-    source.screenEmitter.add('Spectrums');
-  }
-
-  @override
   Widget build(BuildContext context) {
     return StreamBuilder<String?>(
         stream: source.screenEmitter,

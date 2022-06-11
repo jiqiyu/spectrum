@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:spectrum/screen/checklist.dart';
 import 'package:spectrum/screen/profile.dart';
 import 'package:spectrum/screen/spectrums.dart';
 import 'package:spectrum/theme.dart' as app_theme;
@@ -14,8 +15,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // String? currentScreen = 'Spectrum';
-
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<String?>(
@@ -98,6 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 Widget _buildAppBody(String? screen) {
+  print(screen);
   switch (screen) {
     // TODO: write all the components
     case 'Spectrums':
@@ -108,11 +108,7 @@ Widget _buildAppBody(String? screen) {
     //   return const Insights();
     case 'Profile':
       return const ProfileScreen();
-    // case null:
-    //   return const DailyChecklist();
     default:
-      return Center(
-        child: Text(screen ?? 'checklist'),
-      );
+      return const ChecklistScreen();
   }
 }
