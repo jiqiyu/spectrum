@@ -7,4 +7,5 @@ import '../model/spectrum_model.dart';
 // - design the introduction for first time users in checklist screen
 final screenEmitter = BehaviorSubject<String?>.seeded('checklist');
 
-final specListController = BehaviorSubject<List<Spectrum>>.seeded([]);
+final specListController = PublishSubject<List<Spectrum>>();
+// BehaviorSubject<List<Spectrum>>.seeded([]);

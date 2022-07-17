@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:math';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
@@ -49,7 +50,7 @@ class _SpectrumsScreenState extends State<SpectrumsScreen> {
   // - add sort by
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Spectrum>>(
+    return StreamBuilder<List<Spectrum>?>(
         stream: source.specListController,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -58,13 +59,6 @@ class _SpectrumsScreenState extends State<SpectrumsScreen> {
           if (snapshot.hasData) {
             if (_isLoading) {
               return const Center(child: CircularProgressIndicator());
-            }
-
-            if (snapshot.data!.isEmpty) {
-              // no data, create a system default spectrum
-              var defaultSpec = Spectrum.fromMap(
-                  {'name': 'My Day Tracker', 'isDefault': true});
-              setState(() => specs.add(defaultSpec));
             }
 
             List<Widget> cards = _spectrumCards(snapshot.data ?? specs);
@@ -109,24 +103,25 @@ class _SpectrumsScreenState extends State<SpectrumsScreen> {
     setState(() => _isLoading = true);
 
     try {
-      var data = await Spectrum.fetchSome(
+      final data = await Spectrum.fetchSome(
           userId, _cursor, _orderBy, _orderDirection, _pageSize);
       late Spectrum defaultSpec;
 
       if (data['specs'].isEmpty) {
-        defaultSpec = Spectrum.fromMap({
-          'name': 'My Day Tracker_${AuthService.user!.uid}',
-          'isDefault': true
-        });
-        defaultSpec.id = await Spectrum.createSpec(
-            AuthService.user!.uid, defaultSpec,
+        defaultSpec = await Spectrum.createSpec(
+            AuthService.user!.uid,
+            Spectrum.fromMap({
+              'userId': AuthService.user!.uid,
+              'name': 'My Day Tracker_${AuthService.user!.uid}',
+              'isDefault': true
+            }),
             isDefault: true);
       }
 
       setState(() {
         _isLoading = false;
         _hasMore = data['hasMore'];
-        specs.addAll(data.isEmpty ? [defaultSpec] : data['specs']);
+        specs.addAll(data['specs'].isEmpty ? [defaultSpec] : data['specs']);
         if (specs.isNotEmpty) _cursor = specs.length - 1;
       });
       source.specListController.add(specs);

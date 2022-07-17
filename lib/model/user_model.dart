@@ -52,7 +52,7 @@ class User {
       'birthday': _birthday,
       'occupation': _occupation,
       'nationality': _nationality,
-      'specs': _specs,
+      'specs': _specs ?? [],
       'settings': _settings,
     };
   }
@@ -69,10 +69,10 @@ class User {
     return ref.set(user.asMap);
   }
 
-  static Future<void> addSpec(String userId, String specId) async {
+  static Future<void> addSpec(String userId, String specName) async {
     var ref = FirestoreService().db.collection('users').doc(userId);
     return ref.update({
-      'specs': FieldValue.arrayUnion([specId]),
+      'specs': FieldValue.arrayUnion([specName]),
     });
   }
 

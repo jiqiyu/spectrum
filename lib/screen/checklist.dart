@@ -18,8 +18,6 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
   void initState() {
     super.initState();
     _getDefaultSpec();
-    shouldDisplayGreet =
-        spec == null || spec!.taskIds == null || spec!.taskIds!.isEmpty;
   }
 
   @override
@@ -75,6 +73,12 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
 
   void _getDefaultSpec() async {
     final Spectrum? spec = await Spectrum.fetchDefault(AuthService.user!.uid);
-    setState(() => this.spec = spec);
+    if (mounted) {
+      setState(() {
+        this.spec = spec;
+        shouldDisplayGreet =
+            spec == null || spec.taskIds == null || spec.taskIds!.isEmpty;
+      });
+    }
   }
 }

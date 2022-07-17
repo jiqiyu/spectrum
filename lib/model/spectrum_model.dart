@@ -40,8 +40,8 @@ class Spectrum {
         workers = map['workers'],
         tags = map['tags'],
         taskIds = map['taskIds'],
-        createdAt = map['createdAt'] ?? FieldValue.serverTimestamp(),
-        updatedAt = map['updatedAt'] ?? FieldValue.serverTimestamp();
+        createdAt = map['createdAt'],
+        updatedAt = map['updatedAt'];
 
   Spectrum.fromMapWithId(Map<String, dynamic> map)
       : assert(map['name'] != null, "'name' cannot be null."),
@@ -56,8 +56,8 @@ class Spectrum {
         workers = map['workers'],
         tags = map['tags'],
         taskIds = map['taskIds'],
-        createdAt = map['createdAt'] ?? FieldValue.serverTimestamp(),
-        updatedAt = map['updatedAt'] ?? FieldValue.serverTimestamp();
+        createdAt = map['createdAt'],
+        updatedAt = map['updatedAt'];
 
   Map<String, dynamic> get asMap {
     return <String, dynamic>{
@@ -66,7 +66,7 @@ class Spectrum {
       'isPinned': isPinned,
       'isDefault': isDefault,
       'isPublic': isPublic,
-      'isArchive': isArchived,
+      'isArchived': isArchived,
       'tags': tags,
       'workers': workers,
       'taskIds': taskIds,
@@ -175,29 +175,38 @@ class Spectrum {
         {'id': data.docs.first.id, ...data.docs.first.data()});
   }
 
-  static Future<String> createSpec(String userId, Spectrum spec,
+  static Future<Spectrum> createSpec(String userId, Spectrum spec,
       {bool isDefault = false}) async {
-    var nameRef = FirestoreService()
+    final nameRef = FirestoreService()
         .db
         .collection('specs')
-        .where('name', isEqualTo: '${spec.name}_$userId');
-    var result = await nameRef.get();
+        .where('name', isEqualTo: spec.name);
+    final result = await nameRef.get();
     if (result.size > 0) {
       throw Exception('Spec name already exists.');
     }
 
-    var ref = FirestoreService().db.collection('specs').doc();
-    await FirestoreService().db.runTransaction((transaction) async {
-      var s = spec.asMap;
-      if (isDefault) s = {...s, 'isDefault': true};
-      await ref.set(s);
-      transaction
-          .update(FirestoreService().db.collection('users').doc(userId), {
-        'specs': FieldValue.arrayUnion(['${spec.name}_$userId'])
-      });
+    var s = spec.asMap;
+    if (s['createdAt'] ?? true) s['createdAt'] = FieldValue.serverTimestamp();
+    if (s['updatedAt'] ?? true) s['updatedAt'] = FieldValue.serverTimestamp();
+    if (isDefault) s = {...s, 'isDefault': true};
+
+    final batch = FirestoreService().db.batch();
+
+    final specRef = FirestoreService().db.collection('specs').doc();
+    batch.set(specRef, s);
+
+    final userRef = FirestoreService().db.collection('users').doc(userId);
+    batch.update(userRef, {
+      'specs': FieldValue.arrayUnion([spec.name])
     });
 
-    return '${spec.name}_$userId';
+    await batch.commit();
+
+    final inserted = await nameRef.get();
+
+    return Spectrum.fromMapWithId(
+        {'id': inserted.docs.first.id, ...inserted.docs.first.data()});
   }
 
   // TODO:
