@@ -9,7 +9,7 @@ class User {
   String? avatar;
   String? _password;
   String? bio;
-  String? _sex;
+  String? _pronoun;
   String? _birthday;
   String? _occupation;
   String? _nationality;
@@ -32,7 +32,7 @@ class User {
         avatar = map['avatar'],
         _password = map['password'],
         bio = map['bio'],
-        _sex = map['sex'],
+        _pronoun = map['pronoun'],
         _birthday = map['birthday'],
         _occupation = map['occupation'],
         _nationality = map['nationality'],
@@ -48,7 +48,7 @@ class User {
       'avatar': avatar,
       'password': _password,
       'bio': bio,
-      'sex': _sex,
+      'pronoun': _pronoun,
       'birthday': _birthday,
       'occupation': _occupation,
       'nationality': _nationality,

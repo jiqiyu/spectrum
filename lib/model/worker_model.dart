@@ -1,36 +1,48 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:spectrum/model/spectrum_model.dart';
 import 'package:spectrum/service/firestore.dart';
 import 'routine_model.dart';
 
 class Worker {
   final TaskType type; // type.name is stored in firestore as document id
-  List<String> specIds;
+  List<String> specNames;
   List<String> taskIds;
-  String? description = '';
+  String? description;
 
   Worker({
     required this.type,
-    required this.specIds,
+    required this.specNames,
     required this.taskIds,
     this.description,
   });
 
-  Future<void> addWorker(Worker worker) async {
-    var ref = FirestoreService().db.collection('workers').doc(worker.type.name);
+  Future<void> addTask(Worker worker) async {
+    final ref =
+        FirestoreService().db.collection('workers').doc(worker.type.name);
+    final w = await ref.get();
+
+    if (w.exists) {
+      return ref.update({
+        'description': worker.description ?? taskDescription[worker.type.name],
+        'specNames': FieldValue.arrayUnion(worker.specNames),
+        'taskIds': FieldValue.arrayUnion(worker.taskIds),
+      }).then((_) => Spectrum.registerWorker(worker, worker.specNames[0]));
+    }
+
     return ref.set({
-      'description': worker.description,
-      'specIds': worker.specIds,
+      'description': worker.description ?? taskDescription[worker.type.name],
+      'specIds': worker.specNames,
       'taskIds': worker.taskIds,
-    });
+    }).then((_) => Spectrum.registerWorker(worker, worker.specNames[0]));
   }
 
-  Future<void> registerSpec(String specId, String worker) async {}
+  Future<void> registerSpec(String specName, String worker) async {}
 }
 
 class Task {
   String? id; // auto generated doc id
   String type; // one of the task types
-  String specId;
+  String specName;
   Timestamp createdAt = Timestamp.now();
   Map<String, dynamic> data;
   // TODO: notification settings
@@ -38,7 +50,7 @@ class Task {
   Task({
     this.id,
     required this.type,
-    required this.specId,
+    required this.specName,
     required this.data, // task data, e.g. a routine detail
   });
 
@@ -46,10 +58,23 @@ class Task {
     return <String, dynamic>{
       'id': id,
       'type': type,
-      'specId': specId,
+      'specName': specName,
       'createdAt': createdAt,
       'data': data,
     };
+  }
+
+  static Future<String> createTask(
+      TaskType t, Map<String, dynamic> data) async {
+    String taskId;
+
+    switch (t) {
+      case TaskType.routine:
+        taskId = await createRoutine(t, Routine.fromMap(data));
+        break;
+    }
+
+    return taskId;
   }
 }
 
@@ -67,19 +92,11 @@ const Map<String, String> taskDescription = {
   'cycleTracking': 'Track how frequently an event occurs, e.g. womens period',
 };
 
-Future<void> createTask(TaskType t, Map<String, dynamic> data) async {
-  switch (t) {
-    case TaskType.routine:
-      await createRoutine(t, data as Routine);
-      break;
-  }
-}
-
 Future<String> createRoutine(TaskType t, Routine r) async {
   var ref = FirestoreService().db.collection('tasks').doc();
   await ref.set({
     'type': t.name,
-    'specId': r.specId,
+    'specName': r.specName,
     'data': r.asMap,
   });
 

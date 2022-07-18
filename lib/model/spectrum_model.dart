@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:spectrum/model/worker_model.dart';
 import 'package:spectrum/service/firestore.dart';
 
 class Spectrum {
@@ -53,9 +54,9 @@ class Spectrum {
         // isDefault = map['isDefault'] ?? false,
         isPublic = map['isPublic'] ?? false,
         isArchived = map['isArchived'] ?? false,
-        workers = map['workers'],
+        workers = map['workers']?.cast<String>(),
         tags = map['tags'],
-        taskIds = map['taskIds'],
+        taskIds = map['taskIds']?.cast<String>(),
         createdAt = map['createdAt'],
         updatedAt = map['updatedAt'];
 
@@ -119,6 +120,8 @@ class Spectrum {
         .toList();
   }
 
+  /// first request, cursor should be set to -1, then set to
+  /// returned (specs.length - 1) for subsequent reqest
   static Future<Map<String, dynamic>> fetchSome(String userId, int cursor,
       String orderby, String orderDirection, int pageSize) async {
     var ref = FirestoreService()
@@ -196,6 +199,8 @@ class Spectrum {
     final specRef = FirestoreService().db.collection('specs').doc();
     batch.set(specRef, s);
 
+    // TODO: fix this
+    // user specs is not there sometimes
     final userRef = FirestoreService().db.collection('users').doc(userId);
     batch.update(userRef, {
       'specs': FieldValue.arrayUnion([spec.name])
@@ -214,7 +219,21 @@ class Spectrum {
   // - related collection: users, workers, tasks
   static Future<void> delete(List<String> ids) async {}
 
-  Future<void> registerWorker(String worker) async {}
+  static Future<void> registerWorker(Worker worker, String specName) async {
+    FirestoreService()
+        .db
+        .collection('specs')
+        .where('name', isEqualTo: specName)
+        .get()
+        .then((value) {
+      if (value.docs.isNotEmpty) {
+        value.docs.first.reference.update({
+          'taskIds': FieldValue.arrayUnion(worker.taskIds),
+          'workers': FieldValue.arrayUnion([worker.type.name]),
+        });
+      }
+    });
+  }
 
   Future<void> update(String id, Spectrum spec) async {}
 }

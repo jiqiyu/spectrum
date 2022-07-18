@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:spectrum/service/auth.dart';
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+class Profile extends StatelessWidget {
+  const Profile({Key? key}) : super(key: key);
 
   // TODO: just a placeholder for now, will write up later
   @override

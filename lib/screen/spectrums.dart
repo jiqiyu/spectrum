@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -12,14 +13,14 @@ import 'package:spectrum/service/stream_service.dart' as source;
 
 import '../widget/error.dart';
 
-class SpectrumsScreen extends StatefulWidget {
-  const SpectrumsScreen({Key? key}) : super(key: key);
+class Spectrums extends StatefulWidget {
+  const Spectrums({Key? key}) : super(key: key);
 
   @override
-  State<SpectrumsScreen> createState() => _SpectrumsScreenState();
+  State<Spectrums> createState() => _SpectrumsState();
 }
 
-class _SpectrumsScreenState extends State<SpectrumsScreen> {
+class _SpectrumsState extends State<Spectrums> {
   final _pageSize = 1;
   final _orderBy = 'createdAt';
   final _orderDirection = 'asc';
@@ -116,6 +117,28 @@ class _SpectrumsScreenState extends State<SpectrumsScreen> {
               'isDefault': true
             }),
             isDefault: true);
+
+        final date = Routine.currentDateValues();
+        Timestamp startAt = Timestamp.fromDate(DateTime(
+            date['currentYear'], date['currentMonth'], date['currentDay']));
+
+        final routine = {
+          'name': 'Default Daily Routine',
+          'unit': CycleUnit.day,
+          'cycle': 1,
+          'startAt': startAt,
+          // TODO: fix this
+          'nextStartAt':
+              Routine.calculateDuration(CycleUnit.day.name, 1, startAt),
+          'specName': defaultSpec.name,
+        };
+
+        final taskId = await Task.createTask(TaskType.routine, routine);
+        final worker = Worker(
+            type: TaskType.routine,
+            specNames: [defaultSpec.name],
+            taskIds: [taskId]);
+        worker.addTask(worker);
       }
 
       setState(() {

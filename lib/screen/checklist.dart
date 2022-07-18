@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../model/spectrum_model.dart';
 import '../service/auth.dart';
+import 'package:spectrum/model/worker_model.dart';
+import 'package:spectrum/model/routine_model.dart';
 
-class ChecklistScreen extends StatefulWidget {
-  const ChecklistScreen({Key? key}) : super(key: key);
+class Checklist extends StatefulWidget {
+  const Checklist({Key? key}) : super(key: key);
 
   @override
-  State<ChecklistScreen> createState() => _ChecklistScreenState();
+  State<Checklist> createState() => _ChecklistState();
 }
 
-class _ChecklistScreenState extends State<ChecklistScreen> {
+class _ChecklistState extends State<Checklist> {
   bool shouldDisplayGreet = false;
   Spectrum? spec;
 
@@ -22,9 +24,10 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (shouldDisplayGreet) {
-      return _greetings();
-    }
+    // TODO:
+    // if (shouldDisplayGreet) {
+    //   return _greetings();
+    // }
 
     return _checklist();
   }
@@ -68,8 +71,16 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
   }
 
   Widget _checklist() {
-    return const Center(child: Text('Checklist'));
+    return Center(
+      child: IconButton(
+        onPressed: () {},
+        icon: const Icon(Icons.add),
+      ),
+    );
+    // return const Center(child: Text('Checklist'));
   }
+
+  void _addDailyRoutineItem() async {}
 
   void _getDefaultSpec() async {
     final Spectrum? spec = await Spectrum.fetchDefault(AuthService.user!.uid);

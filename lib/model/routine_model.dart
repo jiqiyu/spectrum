@@ -1,50 +1,60 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Routine {
   String name;
-  List<RoutineItem> items;
-  Timestamp? startAt = Timestamp.now();
+  List<String> checkedItems = [];
+  List<String> uncheckedItems = [];
+  Timestamp startAt = Timestamp.now();
   int cycle;
   CycleUnit unit;
   Timestamp nextStartAt;
-  String specId;
+  String specName;
   bool shouldNotify = false;
-  bool isAchived = false;
+  bool isArchived = false;
   Timestamp? archivedAt;
 
   Routine(
       {required this.name,
-      required this.items,
       required this.cycle,
       required this.unit,
-      required this.specId,
-      this.startAt})
-      : nextStartAt = calculateDuration(unit, cycle);
+      required this.specName,
+      required this.startAt})
+      : nextStartAt = calculateDuration(unit.name, cycle, startAt);
 
   Routine.fromMap(Map<String, dynamic> map)
       : assert(map['name'] != null, "'name' cannot be null."),
-        assert(map['specId'] != null, "'specId' cannot be null."),
-        assert(
-            map['items'] != null && map['items'] is List<Map<String, dynamic>>,
-            "'items must be a list of RoutineItem."),
-        assert(map['cycle'] != null, "'cycle' cannot be null."),
-        assert(map['cycleUnit'] != null, "'cycleUnit' cannot be null."),
+        assert(map['specName'] != null, "'specName' cannot be null."),
+        assert(map['cycle'] != null && map['cycle'] is int,
+            "'cycle' must be an integer and cannot be null."),
+        assert(map['unit'] != null && map['unit'] is CycleUnit,
+            "'unit' must be of CycleUnit and cannot be null."),
         name = map['name'],
-        items =
-            List.from(map['items'].map((item) => RoutineItem.fromMap(item))),
+        checkedItems =
+            (map['checkedItems']?.isEmpty ?? true) ? [] : map['checkedItems'],
+        uncheckedItems = (map['uncheckedItems']?.isEmpty ?? true)
+            ? []
+            : map['uncheckedItems'],
         cycle = map['cycle'],
         unit = map['unit'],
-        nextStartAt = calculateDuration(map['unit'], map['cycle']),
-        specId = map['specId'];
+        startAt = map['startAt'],
+        nextStartAt = calculateDuration(
+            (map['unit'].toString().replaceAll('CycleUnit.', '')),
+            map['cycle'],
+            map['startAt']),
+        specName = map['specName'];
 
   Map<String, dynamic> get asMap {
     return <String, dynamic>{
       'name': name,
-      'items': items,
+      'checkedItems': checkedItems,
+      'uncheckedItems': uncheckedItems,
       'cycle': cycle,
-      'cycleUnit': unit,
+      'unit': unit.name,
       'startAt': startAt,
       'nextStartAt': nextStartAt,
+      'specName': specName,
     };
   }
 
@@ -54,59 +64,43 @@ class Routine {
 
   static Future<void> achive() async {}
 
-  static Timestamp calculateDuration(CycleUnit unit, int cycle) {
+  static Timestamp calculateDuration(
+      String unit, int cycle, Timestamp startAt) {
+    int microseconds = 0;
+
+    switch (unit) {
+      case 'minute':
+        microseconds = 60 * 1000 * cycle;
+        break;
+      case 'hour':
+        microseconds = 60 * 60 * 1000 * cycle;
+        break;
+      case 'day':
+        microseconds = 24 * 60 * 60 * 1000 * cycle;
+        log('startAt epoch: ${startAt.microsecondsSinceEpoch}, add: $microseconds, final epoch: ${startAt.microsecondsSinceEpoch + microseconds}');
+        inspect(Timestamp.fromMicrosecondsSinceEpoch(
+            startAt.microsecondsSinceEpoch + microseconds));
+        break;
+    }
+    return Timestamp.fromMicrosecondsSinceEpoch(
+        startAt.microsecondsSinceEpoch + microseconds);
+  }
+
+  static currentDateValues() {
     DateTime now = DateTime.now().toUtc();
     int currentMonth = now.month;
     int currentYear = now.year;
     int currentDay = now.day;
-    int currentHour = now.hour;
-    int currentMinute = now.minute;
-    int currentSecond = now.second;
-
-    switch (unit) {
-      case CycleUnit.minute:
-        assert(cycle > 0 && cycle < 60,
-            "'cycle' must be integer between 1 and 59");
-        return Timestamp.fromDate(DateTime(currentYear, currentMonth,
-            currentDay, currentHour, currentMinute + cycle, currentSecond));
-      case CycleUnit.hour:
-        assert(cycle > 0 && cycle < 24,
-            "'cycle' must be integer between 1 and 23");
-        return Timestamp.fromDate(DateTime(currentYear, currentMonth,
-            currentDay, currentHour + cycle, currentMinute, currentSecond));
-      case CycleUnit.day:
-        assert(cycle > 0 && cycle <= 28,
-            "'cycle' must be integer between 1 and 28");
-        return Timestamp.fromDate(DateTime(currentYear, currentMonth,
-            currentDay + cycle, currentHour, currentMinute, currentSecond));
-      case CycleUnit.month:
-        assert(cycle > 0 && cycle <= 11,
-            "'cycle' must be integer between 1 and 11");
-        return Timestamp.fromDate(DateTime(currentYear, currentMonth + cycle,
-            currentDay, currentHour, currentMinute, currentSecond));
-      case CycleUnit.year:
-        assert(cycle > 0, "'cycle' must be integer greater than 0");
-        return Timestamp.fromDate(DateTime(currentYear + cycle, currentMonth,
-            currentDay, currentHour, currentMinute, currentSecond));
-    }
+    return {
+      'currentDay': currentDay,
+      'currentMonth': currentMonth,
+      'currentYear': currentYear,
+    };
   }
-}
-
-class RoutineItem {
-  final String content;
-  bool isChecked;
-
-  RoutineItem(this.content, [this.isChecked = false]);
-
-  RoutineItem.fromMap(Map<String, dynamic> map)
-      : content = map['content'],
-        isChecked = map['isChecked'] ?? false;
 }
 
 enum CycleUnit {
   minute,
   hour,
   day,
-  month,
-  year,
 }

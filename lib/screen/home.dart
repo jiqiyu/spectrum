@@ -7,14 +7,14 @@ import 'package:spectrum/widget/bottom_nav_btn.dart';
 import 'package:spectrum/service/stream_service.dart' as source;
 import 'package:spectrum/widget/info_text_btn.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+class Home extends StatefulWidget {
+  const Home({Key? key}) : super(key: key);
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<Home> createState() => _HomeState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<String?>(
@@ -101,14 +101,14 @@ Widget _buildAppBody(String? screen) {
   switch (screen) {
     // TODO: write all the components
     case 'Spectrums':
-      return const SpectrumsScreen();
+      return const Spectrums();
     // case 'Create':
     //   return const Activities();
     // case 'Insights':
     //   return const Insights();
     case 'Profile':
-      return const ProfileScreen();
+      return const Profile();
     default:
-      return const ChecklistScreen();
+      return const Checklist();
   }
 }

@@ -36,10 +36,10 @@ class _AppState extends State<App> {
           debugShowCheckedModeBanner: false,
           theme: appTheme,
           routes: {
-            '/login': (context) => const LoginScreen(),
+            '/login': (context) => const Login(),
           },
           home: snapshot.connectionState == ConnectionState.waiting
-              ? const LoadingScreen()
+              ? const Loading()
               : snapshot.hasError
                   ? const ErrorMessage()
                   : const Dispatcher(),
@@ -61,12 +61,12 @@ class Dispatcher extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           theme: appTheme,
           home: snapshot.connectionState == ConnectionState.waiting
-              ? const LoadingScreen()
+              ? const Loading()
               : snapshot.hasError
                   ? const ErrorMessage()
                   : snapshot.hasData
                       ? const DataHandler()
-                      : const LoginScreen(),
+                      : const Login(),
         );
       },
     );
@@ -90,7 +90,7 @@ class DataHandler extends StatelessWidget {
         if (snapshot.data == true) currentUser.createUser(currentUser);
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          home: const HomeScreen(),
+          home: const Home(),
           theme: appTheme,
         );
       },
