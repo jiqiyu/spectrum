@@ -16,6 +16,8 @@ class Spectrum {
   List<String>? taskIds;
   Timestamp? createdAt;
   Timestamp? updatedAt;
+  List<String>? sharedWith; // a list of userIds
+
   // TODO:
   // - add notification settings
   // - add attachments

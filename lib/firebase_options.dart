@@ -17,14 +17,14 @@ import 'package:spectrum/secret.dart';
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      return web;
+      return Secrete.web;
     }
     // ignore: missing_enum_constant_in_switch
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return android;
+        return Secrete.android;
       case TargetPlatform.iOS:
-        return ios;
+        return Secrete.ios;
       case TargetPlatform.macOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for macos - '
@@ -36,11 +36,4 @@ class DefaultFirebaseOptions {
       'DefaultFirebaseOptions are not supported for this platform.',
     );
   }
-
-  static final FirebaseOptions web = FirebaseOptions.fromMap(Secrete.web);
-
-  static final FirebaseOptions android = 
-    FirebaseOptions.fromMap(Secrete.android);
-
-  static final FirebaseOptions ios = FirebaseOptions.fromMap(Secrete.ios);
 }

@@ -83,6 +83,8 @@ enum TaskType {
   // plan, // N days plan
   // stocktaking,
   // calendarEvent,
+  // todoList,
+  // log,
 }
 
 const Map<String, String> taskDescription = {
